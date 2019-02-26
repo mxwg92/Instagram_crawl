@@ -1,0 +1,93 @@
+from time import sleep
+from selenium import webdriver
+from selenium.webdriver.firefox.firefox_binary import FirefoxBinary
+from bs4 import BeautifulSoup
+binary = FirefoxBinary('C:\\Program Files\\Mozilla Firefox\\firefox.exe')
+driver = webdriver.Firefox(firefox_binary=binary,executable_path = "C:/Users/minako.goh/Downloads/geckodriver-v0.24.0-win64/geckodriver.exe")
+hashtag = "sneakers"
+driver.get('https://www.instagram.com/explore/tags/' +hashtag + '/')
+
+
+## Scrolling down the page
+## Method 1
+from selenium.webdriver.common.keys import Keys
+scroll_time = 13
+for _ in range(13):
+    webdriver.common.action_chains.ActionChains(driver).key_down(Keys.SPACE).key_up(Keys.SPACE).perform()
+    sleep(1)
+driver.find_element_by_tag_name('body').send_keys(Keys.HOME)
+
+##Open up the first image
+
+inputs = driver.find_elements_by_xpath("//article/div/div/div/div/div")
+webdriver.common.action_chains.ActionChains(driver).move_to_element(inputs[0]).click().perform()
+
+## Downloading images
+
+html = driver.page_source
+soup = BeautifulSoup(html)
+count = 0
+import urllib.request
+import cv2
+import numpy as np
+
+def url_to_image(url):
+    # download the image, convert it to a NumPy array, and then read
+    # it into OpenCV format
+    resp = urllib.request.urlopen(url)
+    image = np.asarray(bytearray(resp.read()), dtype="uint8")
+    image = cv2.imdecode(image, cv2.IMREAD_COLOR)
+    # return the image
+    return image
+
+for link in soup.find_all('img'):
+    link_name = (link.get('src',None),link.get_text())
+    print (link_name[0])
+    # download the image URL and display it
+    count += 1
+    #print ("downloading %s"% (link_name)) 
+    image = url_to_image(link_name[0])
+
+    cv2.imwrite(("C:/Users/minako.goh/Pictures/Instagram Shoes/"+ str(count)+ ".png"),image)
+    
+ 
+ 
+ ## Downloading all information
+ 
+ picture_dict = []
+count = 0
+
+for _ in range(200):
+
+    ## Text from COMMENT 
+    
+    comment = []
+    elems = driver.find_elements_by_tag_name("span")
+    for elem in elems:
+        if elem.text:
+            print (elem.text)
+            comment.append(elem.text)
+            
+
+    ## Find TIME
+    date=[]
+    orgs = driver.find_elements_by_tag_name("time")
+    if orgs:
+        org = orgs[0]
+        print(org.get_attribute("datetime"),org.get_attribute("title"))
+        date.append((org.get_attribute("datetime"),org.get_attribute("title")))
+    else:
+        date.append(("0","0"))
+        pass
+    
+    
+    picture_dict.append((comment,date))
+    
+    ## Click NEXT
+
+    continue_link = driver.find_element_by_link_text('Next')
+    webdriver.common.action_chains.ActionChains(driver).move_to_element(continue_link).click().perform()
+    
+    sleep(3)
+    
+    
